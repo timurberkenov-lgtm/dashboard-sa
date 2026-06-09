@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Загруженность НСА · Май 2026</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue-50: #E6F1FB; --blue-100: #B5D4F4; --blue-200: #85B7EB;
+    --blue-400: #378ADD; --blue-600: #185FA5; --blue-800: #0C447C; --blue-900: #042C53;
+    --amber-50: #FAEEDA; --amber-400: #BA7517; --amber-600: #854F0B; --amber-900: #412402;
+    --gray-50: #F1EFE8; --gray-100: #D3D1C7; --gray-200: #B4B2A9; --gray-400: #888780; --gray-600: #5F5E5A; --gray-800: #444441; --gray-900: #2C2C2A;
+    --green-50: #EAF3DE; --green-600: #3B6D11; --green-800: #27500A;
+    --red-50: #FCEBEB; --red-600: #A32D2D; --red-800: #791F1F;
+    --bg: #F8F9FB; --surface: #FFFFFF; --border: rgba(0,0,0,0.08);
+    --text: #1A1A2E; --text-muted: #6B7080; --text-light: #9BA3B0;
+    --radius: 10px; --radius-lg: 14px;
+  }
+  body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); line-height: 1.5; }
+  .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+  .header-left h1 { font-size: 22px; font-weight: 600; color: var(--blue-900); letter-spacing: -0.3px; }
+  .header-left p { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+  .header-badge { background: var(--blue-600); color: #fff; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: 500; }
+
+  /* Metric grid */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.75rem; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
+  .metric-label { font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
+  .metric-value { font-size: 28px; font-weight: 700; margin: 4px 0 2px; }
+  .metric-sub { font-size: 12px; color: var(--text-muted); }
+  .metric.blue .metric-value { color: var(--blue-600); }
+  .metric.green .metric-value { color: var(--green-600); }
+  .metric.amber .metric-value { color: var(--amber-400); }
+  .metric.red .metric-value { color: var(--red-600); }
+
+  /* Section title */
+  .section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .section-head h2 { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
+  .section-head span { flex: 1; height: 1px; background: var(--border); }
+
+  /* Bar chart card */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; }
+
+  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 9px; }
+  .bar-row:last-child { margin-bottom: 0; }
+  .bar-info { width: 210px; flex-shrink: 0; }
+  .bar-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-domain { font-size: 11px; color: var(--text-muted); }
+  .bar-track { flex: 1; background: var(--blue-50); border-radius: 6px; height: 22px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width 0.8s ease; }
+  .bar-pct-label { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 600; color: var(--blue-800); }
+  .bar-tag { font-size: 11px; color: var(--blue-600); background: var(--blue-50); border: 1px solid var(--blue-100); padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+
+  /* Employee detail cards */
+  .emp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .emp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .emp-header { display: flex; align-items: center; gap: 12px; padding: 1rem 1.25rem; cursor: pointer; user-select: none; transition: background 0.15s; }
+  .emp-header:hover { background: var(--blue-50); }
+  .emp-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--blue-50); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--blue-600); flex-shrink: 0; }
+  .emp-info { flex: 1; min-width: 0; }
+  .emp-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .emp-dom { font-size: 11px; color: var(--text-muted); }
+  .emp-pct { font-size: 16px; font-weight: 700; }
+  .emp-arrow { font-size: 14px; color: var(--text-muted); transition: transform 0.2s; }
+  .emp-card.open .emp-arrow { transform: rotate(180deg); }
+  .emp-body { display: none; padding: 0 1.25rem 1.25rem; border-top: 1px solid var(--border); }
+  .emp-card.open .emp-body { display: block; }
+  .sprint-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin: 14px 0 8px; }
+  .task-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .task-row:last-of-type { border-bottom: none; }
+  .task-link { font-size: 12px; color: var(--blue-600); font-family: 'SF Mono', 'Fira Mono', monospace; text-decoration: none; flex: 1; }
+  .task-link:hover { text-decoration: underline; }
+  .task-hours { font-size: 12px; color: var(--text-muted); }
+  .op-tag { font-size: 10px; background: var(--amber-50); color: var(--amber-600); border: 1px solid #FAC775; border-radius: 3px; padding: 1px 6px; font-weight: 500; }
+
+  /* Op section */
+  .op-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+  .op-emp-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .stacked-bar { display: flex; height: 32px; border-radius: 8px; overflow: hidden; gap: 2px; margin-bottom: 6px; }
+  .stacked-dev { background: var(--blue-600); display: flex; align-items: center; justify-content: center; }
+  .stacked-op { background: #EF9F27; display: flex; align-items: center; justify-content: center; }
+  .stacked-label { font-size: 11px; font-weight: 700; color: #fff; }
+  .op-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-muted); }
+  .op-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 5px; }
+  .op-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+  /* Summary */
+  .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .summary-block { border-left: 3px solid var(--blue-400); padding: 0.75rem 1rem; background: var(--blue-50); border-radius: 0 var(--radius) var(--radius) 0; }
+  .summary-block.warn { border-color: #EF9F27; background: var(--amber-50); }
+  .summary-block h4 { font-size: 11px; font-weight: 700; color: var(--blue-800); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .summary-block.warn h4 { color: var(--amber-600); }
+  .summary-block p { font-size: 13px; color: var(--text); line-height: 1.6; }
+
+  /* Legend */
+  .chart-legend { display: flex; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
+  .leg-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; }
+
+  @media (max-width: 768px) {
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .emp-grid { grid-template-columns: 1fr; }
+    .op-grid { grid-template-columns: 1fr; }
+    .summary-grid { grid-template-columns: 1fr; }
+    .bar-info { width: 140px; }
+    .bar-tag { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-left">
+      <h1>Загруженность команды НСА</h1>
+      <p>Период 04.05 — 29.05.2026 · 2 спринта · 12 аналитиков</p>
+    </div>
+    <div class="header-badge">Актуально</div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric blue">
+      <div class="metric-label">Сотрудников</div>
+      <div class="metric-value">12</div>
+      <div class="metric-sub">в команде НСА</div>
+    </div>
+    <div class="metric blue">
+      <div class="metric-label">Средняя загрузка</div>
+      <div class="metric-value">96%</div>
+      <div class="metric-sub">план 100%</div>
+    </div>
+    <div class="metric green">
+      <div class="metric-label">На 100%</div>
+      <div class="metric-value">5</div>
+      <div class="metric-sub">из 12 сотрудников</div>
+    </div>
+    <div class="metric amber">
+      <div class="metric-label">Ниже плана</div>
+      <div class="metric-value">7</div>
+      <div class="metric-sub">незначительный недобор</div>
+    </div>
+  </div>
+
+  <div class="section-head"><h2>Загруженность по сотрудникам</h2><span></span></div>
+  <div class="card">
+    <div id="bars"></div>
+    <div class="chart-legend">
+      <span><span class="leg-dot" style="background:var(--blue-600)"></span>Загрузка факт</span>
+      <span><span class="leg-dot" style="background:var(--blue-50);border:1px solid var(--blue-200)"></span>Зазор до плана 100%</span>
+    </div>
+  </div>
+
+  <div class="section-head"><h2>Детальная загруженность</h2><span></span></div>
+  <div class="emp-grid" id="emp-grid"></div>
+
+  <div style="margin-top:1.5rem"></div>
+  <div class="section-head"><h2>Операционная нагрузка</h2><span></span></div>
+  <div class="op-grid" id="op-grid"></div>
+
+  <div style="margin-top:1.5rem"></div>
+  <div class="section-head"><h2>Краткая выжимка</h2><span></span></div>
+  <div class="card">
+    <div class="summary-grid" id="summary"></div>
+  </div>
+
+</div>
+
+<script>
+const EMP = [
+  { name:'Беркенов Тимур Женисович', domain:'Card/Loyalty/Partners', load:1.0,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'PMB-630',h:36,op:false},{url:'PMB-631',h:36,op:false}]},
+      {label:'Sprint 2', tasks:[{url:'DPC-6781',h:40,op:false},{url:'DPC-6318',h:40,op:false}]}
+    ]},
+  { name:'Бекаревич Светлана Александровна', domain:'Profile/General', load:0.947,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'FMT-561',h:72,op:false}]},
+      {label:'Sprint 2', tasks:[{url:'FMT-561',h:72,op:false}]}
+    ]},
+  { name:'Абдукаримова Айдана Нурлановна', domain:'Transfers', load:1.0,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'DPC-6600',h:36,op:false},{url:'DPC-6654',h:36,op:false}]},
+      {label:'Sprint 2', tasks:[{url:'DPC-6733',h:40,op:false},{url:'DPC-6653',h:16,op:false},{url:'DPC-6654',h:24,op:false}]}
+    ]},
+  { name:'Алтыбасарова Динара Елнарқызы', domain:'Premier', load:1.0,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'PRM-1144',h:36,op:false},{url:'PMB-568',h:36,op:false}]},
+      {label:'Sprint 2', tasks:[{url:'PMB-2095',h:40,op:false},{url:'PMB-2088',h:40,op:false}]}
+    ]},
+  { name:'Жақсылықова Жібек Еркінқызы', domain:'Integration & Partnership', load:0.947,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'TFP-8',h:32,op:false},{url:'COL-2295',h:32,op:false}]},
+      {label:'Sprint 2', tasks:[{url:'TFP-7',h:40,op:false},{url:'COL-2295',h:40,op:false}]}
+    ]},
+  { name:'Аубакиров Диас Абайұлы', domain:'Profile', load:0.974,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'VED-132',h:32,op:false},{url:'VED-139',h:36,op:false}]},
+      {label:'Sprint 2', tasks:[{url:'VED-138',h:40,op:false},{url:'VED-134',h:40,op:false}]}
+    ]},
+  { name:'Әбдіхалық Шынар Сералықызы', domain:'Payments', load:1.0,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'DPAYMENTS-4835',h:40,op:false},{url:'DPAYMENTS-4830',h:32,op:false}]},
+      {label:'Sprint 2', tasks:[{url:'PMB-2115',h:40,op:false},{url:'PMB-2108',h:40,op:false}]}
+    ]},
+  { name:'Жұманов Елдар Ержанұлы', domain:'ForteMarket', load:0.947,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'MCS-133',h:32,op:false},{url:'DPAYMENTS-4882',h:32,op:false}]},
+      {label:'Sprint 2', tasks:[{url:'DPAYMENTS-4865',h:16,op:false},{url:'MCS-172',h:16,op:false},{url:'DPAYMENTS-4900',h:16,op:false},{url:'MCS-173',h:16,op:false},{url:'MCS-194',h:16,op:false}]}
+    ]},
+  { name:'Танербергенова Жулдыз Исильбековна', domain:'ForteMarket', load:0.947,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'FM-10',h:24,op:false},{url:'MDS-90',h:24,op:false},{url:'MDS-76',h:24,op:false}]},
+      {label:'Sprint 2', tasks:[{url:'FM-30',h:24,op:false},{url:'FM-29',h:16,op:false},{url:'MDS-98',h:16,op:false},{url:'MDS-75',h:16,op:false}]}
+    ]},
+  { name:'Абдрахманов Алмас Аскарович', domain:'Compass+', load:0.974,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'DKPLUS-2196',h:36,op:false},{url:'DKPLUS-2204',h:32,op:false}]},
+      {label:'Sprint 2', tasks:[{url:'DKPLUS-2222',h:32,op:false},{url:'DKPLUS-2243',h:32,op:false},{url:'DKPLUS-2272',h:16,op:false}]}
+    ]},
+  { name:'Насамбаев Мирас Сагындыкович', domain:'ForteMarket', load:0.895,
+    hasOp:true, devH:72, opH:64, totalH:152,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'FMT-910',h:32,op:true},{url:'FMT-909',h:24,op:true},{url:'FMT-907',h:0,op:true},{url:'FMT-897',h:0,op:true},{url:'FMT-887',h:0,op:true},{url:'FMT-886',h:0,op:true}]},
+      {label:'Sprint 2', tasks:[{url:'DPAYMENTS-4929',h:8,op:false},{url:'DPAYMENTS-4930',h:40,op:false},{url:'FMT-951',h:8,op:true},{url:'FMT-948',h:0,op:true},{url:'FMT-941',h:0,op:true},{url:'FMT-927',h:0,op:true},{url:'FMT-926',h:0,op:true},{url:'FMT-916',h:0,op:true},{url:'FMT-915',h:0,op:true},{url:'FMT-912',h:0,op:true},{url:'BIB-1822',h:24,op:false}]}
+    ]},
+  { name:'Кулбатчаев Бекнур Нурханович', domain:'SME', load:1.0,
+    hasOp:true, devH:64, opH:88, totalH:152,
+    sprints:[
+      {label:'Sprint 1', tasks:[{url:'CCR-141',h:12,op:false},{url:'CCR-119',h:12,op:true},{url:'CCR-160',h:12,op:true},{url:'CCR-162',h:12,op:true},{url:'CCR-164',h:12,op:true},{url:'CCR-175',h:12,op:false}]},
+      {label:'Sprint 2', tasks:[{url:'BSN-6758',h:26,op:true},{url:'BSP-4474',h:14,op:true},{url:'BSP-4485',h:28,op:false},{url:'CCR-140',h:12,op:false}]}
+    ]},
+];
+
+function initials(name) {
+  const p = name.split(' ');
+  return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase();
+}
+
+function barColor(load) {
+  if (load >= 0.995) return '#185FA5';
+  if (load >= 0.94) return '#378ADD';
+  return '#85B7EB';
+}
+
+// Bars
+const barsEl = document.getElementById('bars');
+EMP.forEach(e => {
+  const pct = Math.round(e.load * 100);
+  const col = barColor(e.load);
+  barsEl.innerHTML += `
+    <div class="bar-row">
+      <div class="bar-info">
+        <div class="bar-name">${e.name.split(' ').slice(0,2).join(' ')}</div>
+        <div class="bar-domain">${e.domain}</div>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%;background:${col}"></div>
+        <span class="bar-pct-label">${pct}%</span>
+      </div>
+      <span class="bar-tag">${e.domain.split('/')[0]}</span>
+    </div>`;
+});
+
+// Employee cards
+const empGrid = document.getElementById('emp-grid');
+EMP.forEach((e, i) => {
+  const pct = Math.round(e.load * 100);
+  const col = barColor(e.load);
+  let tasksHtml = '';
+  e.sprints.forEach(sp => {
+    tasksHtml += `<div class="sprint-title">${sp.label}</div>`;
+    sp.tasks.forEach(t => {
+      const opTag = t.op ? `<span class="op-tag">операц.</span>` : '';
+      const hStr = t.h > 0 ? `${t.h}ч` : '—';
+      tasksHtml += `<div class="task-row">
+        <a class="task-link" href="https://jira.fortebank.com/browse/${t.url}" target="_blank">${t.url}</a>
+        ${opTag}
+        <span class="task-hours">${hStr}</span>
+      </div>`;
+    });
+  });
+  if (e.hasOp) {
+    const dp = Math.round(e.devH / e.totalH * 100);
+    const op = 100 - dp;
+    tasksHtml += `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Распределение рабочего времени (${e.totalH}ч)</div>
+      <div style="display:flex;height:20px;border-radius:5px;overflow:hidden;gap:2px;margin-bottom:5px">
+        <div style="width:${dp}%;background:var(--blue-600);display:flex;align-items:center;justify-content:center"><span style="font-size:10px;font-weight:700;color:#fff">${dp}%</span></div>
+        <div style="width:${op}%;background:#EF9F27;display:flex;align-items:center;justify-content:center"><span style="font-size:10px;font-weight:700;color:#fff">${op}%</span></div>
+      </div>
+      <div style="display:flex;gap:12px;font-size:11px;color:var(--text-muted)">
+        <span><span class="op-dot" style="background:var(--blue-600)"></span>Задачи ${dp}% (${e.devH}ч)</span>
+        <span><span class="op-dot" style="background:#EF9F27"></span>Операционные ${op}% (${e.opH}ч)</span>
+      </div>
+    </div>`;
+  }
+  const card = document.createElement('div');
+  card.className = 'emp-card';
+  card.id = `emp-${i}`;
+  card.innerHTML = `
+    <div class="emp-header" onclick="toggleCard(${i})">
+      <div class="emp-avatar">${initials(e.name)}</div>
+      <div class="emp-info">
+        <div class="emp-name">${e.name}</div>
+        <div class="emp-dom">${e.domain}</div>
+      </div>
+      <div class="emp-pct" style="color:${col}">${pct}%</div>
+      <div class="emp-arrow">▾</div>
+    </div>
+    <div class="emp-body">${tasksHtml}</div>`;
+  empGrid.appendChild(card);
+});
+
+function toggleCard(i) {
+  document.getElementById(`emp-${i}`).classList.toggle('open');
+}
+
+// Op section
+const opGrid = document.getElementById('op-grid');
+EMP.filter(e => e.hasOp).forEach(e => {
+  const dp = Math.round(e.devH / e.totalH * 100);
+  const op = 100 - dp;
+  opGrid.innerHTML += `
+    <div class="op-card">
+      <div class="op-emp-name">${e.name}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${e.domain} · ${e.totalH}ч рабочих</div>
+      <div class="stacked-bar">
+        <div class="stacked-dev" style="width:${dp}%"><span class="stacked-label">${dp}%</span></div>
+        <div class="stacked-op" style="width:${op}%"><span class="stacked-label">${op}%</span></div>
+      </div>
+      <div class="op-legend">
+        <span><span class="op-dot" style="background:var(--blue-600)"></span>Разработка — ${e.devH}ч</span>
+        <span><span class="op-dot" style="background:#EF9F27"></span>Операционные — ${e.opH}ч</span>
+      </div>
+    </div>`;
+});
+
+// Summary
+const full100 = EMP.filter(e => e.load >= 0.995).map(e => e.name.split(' ').slice(0,2).join(' '));
+const under95 = EMP.filter(e => e.load < 0.95).map(e => e.name.split(' ').slice(0,2).join(' '));
+document.getElementById('summary').innerHTML = `
+  <div class="summary-block">
+    <h4>Общий статус</h4>
+    <p>Команда загружена в среднем на <strong>96%</strong> при плане 100%. Отставание незначительное и объясняется праздничными днями в периоде.</p>
+  </div>
+  <div class="summary-block">
+    <h4>Полная загрузка (100%)</h4>
+    <p>${full100.join(', ')} — работают в полном объёме.</p>
+  </div>
+  <div class="summary-block">
+    <h4>Ниже плана</h4>
+    <p>${under95.join(', ')} — недобор связан с праздниками, не является системной проблемой.</p>
+  </div>
+  <div class="summary-block warn">
+    <h4>⚠ Операционная перегрузка</h4>
+    <p><strong>Бекнур</strong>: 58% времени уходит на операционные задачи. <strong>Мирас</strong>: 42% операционных. Рекомендуется перераспределение нагрузки.</p>
+  </div>`;
+</script>
+</body>
+</html>
